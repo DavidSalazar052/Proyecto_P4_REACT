@@ -31,7 +31,7 @@ public class RootRedirectController {
             @RequestParam(required = false) List<Integer> ids,
             Model model) {
 
-        // ← CAMBIO: usa construirMapaHijos para obtener todos los niveles recursivamente
+
         List<Caracteristicas> padres = service.findPadresCaracteristicas();
         Map<Integer, List<Caracteristicas>> hijos = new HashMap<>();
         service.construirMapaHijos(padres, hijos);

@@ -1,122 +1,101 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from 'react';
+import './index.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+    const [puestos, setPuestos] = useState([]);
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    useEffect(() => {
+        (async () => {
+            const res = await fetch('/api/puestos/recientes');
+            if (!res.ok) return;
+            setPuestos(await res.json());
+        })();
+    }, []);
 
-      <div className="ticks"></div>
+    return (
+        <>
+            {/* ── Sección Inicio con Navbar + Hero ── */}
+            <section className="Inicio">
+                <nav className="navbar-custom">
+                    <div className="navbar-inner">
+                        <span className="navbar-brand">
+                            <img
+                                src="https://cdn-icons-png.flaticon.com/512/86/86155.png"
+                                alt="icono"
+                                style={{ width: 50, height: 50, filter: 'brightness(0) invert(1)' }}
+                            />
+                            <strong> Bolsa de Empleo</strong>
+                        </span>
+                        <div className="navbar-links">
+                            <a className="nav-link" href="#">Buscar Puesto</a>
+                            <a className="nav-link" href="#">Empresas</a>
+                            <a className="nav-link" href="#">Oferentes</a>
+                            <a className="nav-link-login" href="#">Login</a>
+                        </div>
+                    </div>
+                </nav>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+                <div className="hero-content">
+                    <p className="hero-eyebrow">¿Buscas tu próximo gran proyecto?</p>
+                    <h1 className="hero-title">Encuentra tu próximo empleo</h1>
+                </div>
+            </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+            {/* ── Búsqueda rápida ── */}
+            <section className="busqueda-rapida">
+                <div className="card">
+                    <h5>Búsqueda rápida de puestos</h5>
+                    <div className="busqueda-row">
+                        <input
+                            type="text"
+                            placeholder="Ej: Desarrollador Java, Soporte Técnico..."
+                        />
+                        <button className="btn-primary">Buscar</button>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── Últimos 5 puestos públicos ── */}
+            <section className="contenedor-puestos">
+                <h2>Últimos puestos públicos</h2>
+
+                {puestos.length === 0 ? (
+                    <p className="text-muted">
+                        Aún no hay puestos públicos registrados. ¡Volvé pronto!
+                    </p>
+                ) : (
+                    <div className="grid-puestos">
+                        {puestos.map(p => (
+                            <div className="card-puesto" key={p.id}>
+                                <h3>{p.empresa?.nombre ?? 'Empresa'}</h3>
+                                <p className="titulo">{p.descripcion}</p>
+                                <p className="salario">₡ {p.salario}</p>
+                                <div className="detalle">
+                                    <p><strong>Tipo:</strong> {p.tipo}</p>
+                                    <p><strong>Estado:</strong> {p.estado}</p>
+                                    <p><strong>Fecha:</strong> {p.fecha}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </section>
+
+            {/* ── Footer ── */}
+            <footer>
+                <div className="footer-inner">
+                    <div>
+                        <strong>Bolsa de Empleo</strong><br />
+                        Estudiantes de Ingeniería en Sistemas de la UNA
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                        Contacto: info@bolsaempleo.local<br />
+                        Créditos: Universidad Nacional de Costa Rica
+                    </div>
+                </div>
+            </footer>
+        </>
+    );
 }
 
-export default App
+export default App;
