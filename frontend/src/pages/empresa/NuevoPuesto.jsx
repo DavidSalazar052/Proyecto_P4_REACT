@@ -4,6 +4,7 @@ import { AppContext, apiFetch } from '../../AppProvider.jsx';
 
 export default function NuevoPuesto() {
     const navigate = useNavigate();
+    const { setEmpresaState } = useContext(AppContext);
     const [form, setForm] = useState({ descripcion: '', salario: '', tipo: 'PUBLICO' });
     const [error, setError] = useState(null);
     const [cargando, setCargando] = useState(false);
@@ -27,6 +28,11 @@ export default function NuevoPuesto() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Error al crear el puesto');
+            // Agregar el nuevo puesto al estado global de empresa
+            setEmpresaState(prev => ({
+                ...prev,
+                puestos: [...prev.puestos, data],
+            }));
             navigate('/empresa/puestos', { state: { exito: true } });
         } catch (e) {
             setError(e.message);
@@ -46,7 +52,7 @@ export default function NuevoPuesto() {
             <section className="Inicio">
                 <nav className="navbar-custom">
                     <div className="navbar-inner">
-                        <a href="/" className="navbar-brand">
+                        <a href="/frontend/src/pages/public" className="navbar-brand">
                             <img src="https://cdn-icons-png.flaticon.com/512/86/86155.png"
                                  alt="icono" style={{ width: 36, height: 36, filter: 'brightness(0) invert(1)' }} />
                             <strong>Bolsa de Empleo</strong>

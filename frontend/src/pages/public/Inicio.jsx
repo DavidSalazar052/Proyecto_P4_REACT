@@ -6,7 +6,7 @@ export default function Inicio() {
     const { publicState, setPublicState } = useContext(AppContext);
 
     useEffect(() => {
-        apiFetch('/api/public/puestos/recientes')
+        apiFetch('/api/root/puestos/recientes')
             .then(r => r.json())
             .then(data => setPublicState(prev => ({ ...prev, puestosRecientes: data })))
             .catch(() => {});
