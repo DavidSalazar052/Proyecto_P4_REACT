@@ -5,28 +5,33 @@ import BolsaEmpleo.logic.Base.Empresa;
 import BolsaEmpleo.logic.Base.Oferente;
 import BolsaEmpleo.logic.Base.Usuario;
 import BolsaEmpleo.logic.Service;
-import jakarta.servlet.http.HttpServletRequest;
+import BolsaEmpleo.security.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.Map;
 
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
- * ║  AuthController  (antes: LoginController)                        ║
- * ║  Reemplaza las vistas de login/registro por endpoints REST.      ║
+ * ║  AuthController — versión JWT                                    ║
+ * ║                                                                  ║
+ * ║  RUTAS:                                                          ║
+ * ║    POST /api/auth/login              → devuelve JWT              ║
+ * ║    POST /api/auth/registro/empresa   → registrar empresa         ║
+ * ║    POST /api/auth/registro/oferente  → registrar oferente        ║
+ * ║                                                                  ║
+ * ║  NOTAS vs versión con sesiones:                                  ║
+ * ║  - Ya NO existe /api/auth/logout (el cliente simplemente         ║
+ * ║    elimina el token del localStorage).                           ║
+ * ║  - Ya NO existe /api/auth/me (el frontend decodifica el JWT).    ║
+ * ║  - El login usa AuthenticationManager para validar credenciales  ║
+ * ║    y luego TokenService para generar el token.                   ║
  * ╚══════════════════════════════════════════════════════════════════╝
- *
- * RUTAS:
- *  POST /api/auth/login            → manejado por Spring Security (SecurityConfig)
- *  POST /api/auth/logout           → manejado por Spring Security
- *  GET  /api/auth/me               → devuelve el usuario logueado actual
- *  POST /api/auth/registro/empresa → registrar nueva empresa
- *  POST /api/auth/registro/oferente→ registrar nuevo oferente
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -35,25 +40,55 @@ public class AuthController {
     @Autowired private Service          service;
     @Autowired private PasswordEncoder  passwordEncoder;
     @Autowired private UsuarioRepository usuarioRepo;
+    @Autowired private TokenService     tokenService;
+    @Autowired private AuthenticationManager authenticationManager;
 
-    // ── GET /api/auth/me ─────────────────────────────────────────────
-    // React lo llama al montar la app para saber si hay sesión activa.
+    // ── POST /api/auth/login ─────────────────────────────────────────
+    //
+    // Request body (JSON):
+    // { "username": "empresa1", "clave": "pass123" }
     //
     // Response 200:
-    //   { "username": "juan", "rol": "EMP" }
-    // Response 401 (sin sesión):
-    //   Spring Security devuelve 401 automáticamente.
-    @GetMapping("/me")
-    public ResponseEntity<?> me(Principal principal, HttpServletRequest request) {
-        if (principal == null) {
+    // {
+    //   "token":    "eyJhbGciOiJIUzI1NiJ9...",
+    //   "rol":      "EMP",
+    //   "username": "empresa1"
+    // }
+    //
+    // Response 401:
+    // { "error": "Usuario o contraseña incorrectos." }
+    //
+    // El frontend almacena el token en localStorage y lo envía en
+    // cada request con: Authorization: Bearer <token>
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody Map<String, String> body) {
+        try {
+            String username = body.get("username");
+            String clave    = body.get("clave");
+
+            // Valida credenciales usando Spring Security
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, clave)
+            );
+
+            // Carga el usuario de la BD para generar el token con su rol
+            Usuario usuario = usuarioRepo.findByUsernameOnly(username);
+            if (usuario == null) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("error", "Usuario no encontrado."));
+            }
+
+            String token = tokenService.generateToken(usuario);
+
+            return ResponseEntity.ok(Map.of(
+                    "token",    token,
+                    "rol",      usuario.getTipo(),
+                    "username", usuario.getUsername()
+            ));
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "No autenticado"));
+                    .body(Map.of("error", "Usuario o contraseña incorrectos."));
         }
-        Usuario u = usuarioRepo.findByUsernameOnly(principal.getName());
-        return ResponseEntity.ok(Map.of(
-                "username", u.getUsername(),
-                "rol",      u.getTipo()
-        ));
     }
 
     // ── POST /api/auth/registro/empresa ──────────────────────────────
@@ -69,10 +104,8 @@ public class AuthController {
     //   "descripcion": "Empresa de tecnología"
     // }
     //
-    // Response 201:
-    //   { "mensaje": "Empresa registrada. Pendiente de aprobación." }
-    // Response 400 / 409:
-    //   { "error": "El nombre de usuario ya está en uso." }
+    // Response 201: { "mensaje": "Empresa registrada. Pendiente de aprobación." }
+    // Response 409: { "error": "El nombre de usuario ya está en uso." }
     @PostMapping("/registro/empresa")
     public ResponseEntity<?> registrarEmpresa(@RequestBody Map<String, String> body) {
         try {
@@ -126,10 +159,8 @@ public class AuthController {
     //   "residencia":  "San José"
     // }
     //
-    // Response 201:
-    //   { "mensaje": "Oferente registrado. Pendiente de aprobación." }
-    // Response 400 / 409:
-    //   { "error": "El nombre de usuario ya está en uso." }
+    // Response 201: { "mensaje": "Oferente registrado. Pendiente de aprobación." }
+    // Response 409: { "error": "El nombre de usuario ya está en uso." }
     @PostMapping("/registro/oferente")
     public ResponseEntity<?> registrarOferente(@RequestBody Map<String, String> body) {
         try {

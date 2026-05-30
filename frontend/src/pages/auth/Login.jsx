@@ -1,7 +1,16 @@
 import { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { AppContext, apiFetch } from '../../AppProvider.jsx';
+import { AppContext, apiFetch, saveToken } from '../../AppProvider.jsx';
 
+/**
+ * Login.jsx — versión JWT
+ *
+ * Diferencias vs versión con sesiones:
+ * 1. El login envía JSON en el body (no URLSearchParams).
+ * 2. Al recibir { token, rol, username }, guarda el token
+ *    en localStorage con saveToken().
+ * 3. No usa credentials: 'include'.
+ */
 export default function Login() {
     const { setAuthState } = useContext(AppContext);
     const navigate = useNavigate();
@@ -16,12 +25,13 @@ export default function Login() {
         setCargando(true);
         setError(null);
         try {
-            const body = new URLSearchParams({ username: form.username, clave: form.clave });
-            const res = await fetch('http://localhost:8080/api/auth/login', {
+            // Con JWT el login acepta JSON (no x-www-form-urlencoded)
+            const res = await apiFetch('/api/auth/login', {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body,
+                body: JSON.stringify({
+                    username: form.username,
+                    clave:    form.clave,
+                }),
             });
             const data = await res.json();
             if (!res.ok) {
@@ -29,7 +39,15 @@ export default function Login() {
                 setCargando(false);
                 return;
             }
-            setAuthState({ usuario: data, cargando: false, error: null });
+            // Guardar el token JWT en localStorage
+            saveToken(data.token);
+            // Actualizar el estado global de autenticación
+            setAuthState({
+                usuario: { username: data.username, rol: data.rol },
+                cargando: false,
+                error: null,
+            });
+            // Redirigir según el rol
             if (data.rol === 'ADM') navigate('/admin');
             else if (data.rol === 'EMP') navigate('/empresa');
             else if (data.rol === 'OFE') navigate('/oferente');
@@ -85,14 +103,14 @@ export default function Login() {
 }
 
 const styles = {
-    page: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' },
-    card: { background: '#fff', borderRadius: 12, padding: '2.5rem 2rem', width: '100%', maxWidth: 400, boxShadow: '0 4px 24px rgba(0,0,0,0.10)' },
-    title: { textAlign: 'center', color: '#1e3a8a', marginBottom: 4 },
+    page:     { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' },
+    card:     { background: '#fff', borderRadius: 12, padding: '2.5rem 2rem', width: '100%', maxWidth: 400, boxShadow: '0 4px 24px rgba(0,0,0,0.10)' },
+    title:    { textAlign: 'center', color: '#1e3a8a', marginBottom: 4 },
     subtitle: { textAlign: 'center', color: '#64748b', marginBottom: '1.5rem' },
-    error: { background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: 14 },
-    form: { display: 'flex', flexDirection: 'column', gap: 12 },
-    label: { fontWeight: 600, color: '#374151', fontSize: 14 },
-    input: { padding: '0.6rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, outline: 'none' },
-    btn: { marginTop: 8, padding: '0.75rem', borderRadius: 8, background: '#1e3a8a', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', cursor: 'pointer' },
-    links: { marginTop: '1rem', textAlign: 'center', fontSize: 14, color: '#475569' },
+    error:    { background: '#fee2e2', color: '#dc2626', borderRadius: 8, padding: '0.6rem 1rem', marginBottom: '1rem', fontSize: 14 },
+    form:     { display: 'flex', flexDirection: 'column', gap: 12 },
+    label:    { fontWeight: 600, color: '#374151', fontSize: 14 },
+    input:    { padding: '0.6rem 0.8rem', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 15, outline: 'none' },
+    btn:      { marginTop: 8, padding: '0.75rem', borderRadius: 8, background: '#1e3a8a', color: '#fff', fontWeight: 700, fontSize: 16, border: 'none', cursor: 'pointer' },
+    links:    { marginTop: '1rem', textAlign: 'center', fontSize: 14, color: '#475569' },
 };
