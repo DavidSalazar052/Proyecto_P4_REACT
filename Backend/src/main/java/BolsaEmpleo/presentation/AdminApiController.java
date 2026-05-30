@@ -12,11 +12,8 @@ import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.draw.LineSeparator;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.awt.*;
 import java.io.IOException;
@@ -27,106 +24,81 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/*
- * Las rutas /DashboardAdministrador, /EmpresasPendientes, etc.
- * ya están protegidas con hasRole("ADM") en SecurityConfig.
- * Spring Security rechaza cualquier acceso sin ese rol ANTES
- * de que la petición llegue aquí (según el flujo del PDF).
- * Por eso ya no necesitamos verificar la sesión manualmente.
- */
-@Controller
-public class AdminController {
+@RestController
+@RequestMapping("/api/admin")
+public class AdminApiController {
 
     @Autowired
     private Service service;
 
     @GetMapping("/DashboardAdministrador")
-    public String mostrar_DashboardAdmin() {
-        return "presentation/Admin/DashboardAdmin";
+    public ResponseEntity<?> mostrar_DashboardAdmin() {
+        return ResponseEntity.ok(Map.of("mensaje", "Acceso al Dashboard de Administrador"));
     }
 
     @GetMapping("/EmpresasPendientes")
-    public String mostrar_EmpresasPendientes(Model model) {
-        model.addAttribute("empresasPendientes", service.findAll_EmpresasNoAprobadas());
-        return "presentation/Admin/AdminEmpresasPendientes";
+    public ResponseEntity<?> mostrar_EmpresasPendientes() {
+        return ResponseEntity.ok(service.findAll_EmpresasNoAprobadas());
     }
 
-    @PostMapping("/admin/empresas/aprobar")
-    public String aprobarEmpresa(@RequestParam Integer id) {
+    @PostMapping("/empresas/aprobar")
+    public ResponseEntity<?> aprobarEmpresa(@RequestParam Integer id) {
         service.aprobarEmpresa(id);
-        return "redirect:/EmpresasPendientes";
+        return ResponseEntity.ok(Map.of("mensaje", "Empresa aprobada exitosamente"));
     }
 
     @GetMapping("/OferentesPendientes")
-    public String mostrar_OferentesPendientes(Model model) {
-        model.addAttribute("oferentesPendientes", service.findAll_Oferentes_NoAprobadas());
-        return "presentation/Admin/AdminOferentePendiente";
+    public ResponseEntity<?> mostrar_OferentesPendientes() {
+        return ResponseEntity.ok(service.findAll_Oferentes_NoAprobadas());
     }
 
-    @PostMapping("/admin/oferentes/aprobar")
-    public String aprobarOferente(@RequestParam Integer id) {
+    @PostMapping("/oferentes/aprobar")
+    public ResponseEntity<?> aprobarOferente(@RequestParam Integer id) {
         service.aprobarOferente(id);
-        return "redirect:/OferentesPendientes";
+        return ResponseEntity.ok(Map.of("mensaje", "Oferente aprobado exitosamente"));
     }
-
-    // ══════════════════════════════════════════════════════
-    //  Características — árbol completo (recursivo en Service)
-    // ══════════════════════════════════════════════════════
 
     @GetMapping("/AdminCaracteristicas")
-    public String mostrar_Caracteristicas(
+    public ResponseEntity<?> mostrar_Caracteristicas(
             @RequestParam(required = false) String exito,
-            @RequestParam(required = false) String error,
-            Model model) {
+            @RequestParam(required = false) String error) {
 
-        // Raíces
         List<Caracteristicas> padres = service.findPadresCaracteristicas();
-
-        // Mapa recursivo: para cada nodo, sus hijos directos
-        // El HTML itera recursivamente usando el mismo mapa
         Map<Integer, List<Caracteristicas>> hijos = new HashMap<>();
         service.construirMapaHijos(padres, hijos);
-
-        // Todas para el <select> del formulario
         List<Caracteristicas> todas = service.findAll_Caracteristicas();
 
-        model.addAttribute("padres", padres);
-        model.addAttribute("hijos", hijos);
-        model.addAttribute("todas", todas);
+        Map<String, Object> response = new HashMap<>();
+        response.put("padres", padres);
+        response.put("hijos", hijos);
+        response.put("todas", todas);
+        if (exito != null) response.put("exito", true);
+        if (error != null) response.put("error", error);
 
-        if (exito != null) model.addAttribute("exito", true);
-        if (error  != null) model.addAttribute("error", error);
-
-        return "presentation/Admin/AdminCaracteristicas";
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/admin/caracteristicas/crear")
-    public String crearCaracteristica(
+    @PostMapping("/caracteristicas/crear")
+    public ResponseEntity<?> crearCaracteristica(
             @RequestParam String nombre,
             @RequestParam(required = false) Integer padreId) {
         try {
             service.crearCaracteristica(nombre, padreId);
-            return "redirect:/AdminCaracteristicas?exito=true";
+            return ResponseEntity.ok(Map.of("exito", true, "mensaje", "Característica creada"));
         } catch (Exception e) {
-            return "redirect:/AdminCaracteristicas?error=" + e.getMessage();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // ══════════════════════════════════════════════════════
-    //  Reportes
-    // ══════════════════════════════════════════════════════
-
-    @GetMapping("/admin/reportes")
-    public String mostrar_Reportes(Model model) {
+    @GetMapping("/reportes")
+    public ResponseEntity<?> mostrar_Reportes() {
         int anioActual = java.time.LocalDate.now().getYear();
         List<Integer> anios = service.aniosDisponibles();
         if (anios.isEmpty()) anios = List.of(anioActual);
-        model.addAttribute("anios", anios);
-        model.addAttribute("anioActual", anioActual);
-        return "presentation/Admin/AdminReportes";
+        return ResponseEntity.ok(Map.of("anios", anios, "anioActual", anioActual));
     }
 
-    @GetMapping("/admin/reportes/pdf")
+    @GetMapping("/reportes/pdf")
     public void generar_ReportePDF(
             @RequestParam int anio,
             @RequestParam int mes,

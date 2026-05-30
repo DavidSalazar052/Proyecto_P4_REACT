@@ -25,8 +25,8 @@
         <version>3.3.5</version>
         <relativePath/>
     </parent>
-    <groupId>com.example</groupId>
-    <artifactId>Proyecto_P4_BolsaEmpleo</artifactId>
+    <groupId>BolsaEmpleo</groupId>
+    <artifactId>BolsaEmpleoBackend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>Proyecto_P4_BolsaEmpleo</name>
     <description>Proyecto_P4_BolsaEmpleo</description>
@@ -55,10 +55,9 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-        <!-- Integración Thymeleaf + Spring Security (sec:authorize, etc.) -->
         <dependency>
-            <groupId>org.thymeleaf.extras</groupId>
-            <artifactId>thymeleaf-extras-springsecurity6</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
         <!-- ── JWT / OAuth2 Resource Server ─────────────────────────────── -->

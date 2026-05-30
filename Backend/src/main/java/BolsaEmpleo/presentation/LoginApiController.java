@@ -7,56 +7,52 @@ import BolsaEmpleo.logic.Base.Oferente;
 import BolsaEmpleo.logic.Base.Usuario;
 import BolsaEmpleo.logic.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
-@Controller
-public class LoginController {
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/auth")
+public class LoginApiController {
 
     @Autowired private Service service;
-    @Autowired private EmpresaRepository  empresaRepo;
+    @Autowired private EmpresaRepository empresaRepo;
     @Autowired private OferentesRepository oferenteRepo;
     @Autowired private PasswordEncoder passwordEncoder;
 
     @GetMapping("/login")
-    public String mostrarLogin(
-            @RequestParam(required = false) String error,
-            Model model) {
+    public ResponseEntity<?> mostrarLogin(@RequestParam(required = false) String error) {
         if (error != null) {
-            model.addAttribute("error", "Usuario o contraseña incorrectos.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Usuario o contraseña incorrectos."));
         }
-        return "presentation/Login/viewLogin";
+        return ResponseEntity.ok(Map.of("mensaje", "Endpoint de autenticación listo (Usar POST para autenticar)"));
     }
 
     @GetMapping("/login/empresa")
-    public String mostrarRegistroEmpresa() {
-        return "presentation/Login/viewRegistroEmpresa";
+    public ResponseEntity<?> mostrarRegistroEmpresa() {
+        return ResponseEntity.ok(Map.of("mensaje", "Formulario de registro de empresa disponible"));
     }
 
     @GetMapping("/login/oferente")
-    public String mostrarRegistroOferente() {
-        return "presentation/Login/viewRegistroOferente";
+    public ResponseEntity<?> mostrarRegistroOferente() {
+        return ResponseEntity.ok(Map.of("mensaje", "Formulario de registro de oferente disponible"));
     }
 
     @PostMapping("/registro/empresa")
-    public String registrarEmpresa(
+    public ResponseEntity<?> registrarEmpresa(
             @RequestParam String username,
             @RequestParam String clave,
             @RequestParam String nombre,
             @RequestParam String localizacion,
             @RequestParam String correo,
             @RequestParam String telefono,
-            @RequestParam String descripcion,
-            Model model) {
+            @RequestParam String descripcion) {
         try {
-            // ← VALIDACIÓN: no permite espacios en blanco
             if (username.trim().isEmpty() || clave.trim().isEmpty()) {
-                model.addAttribute("error", "El usuario y la contraseña no pueden estar en blanco o contener solo espacios.");
-                return "presentation/Login/viewRegistroEmpresa";
+                return ResponseEntity.badRequest().body(Map.of("error", "El usuario y la contraseña no pueden estar en blanco o contener solo espacios."));
             }
 
             Usuario nuevoUsuario = new Usuario();
@@ -75,17 +71,15 @@ public class LoginController {
 
             service.registrarEmpresa(nuevoUsuario, nuevaEmpresa);
 
-            model.addAttribute("tipo", "EMP");
-            return "presentation/Login/pendienteAprobacion";
+            return ResponseEntity.ok(Map.of("tipo", "EMP", "estado", "Pendiente de aprobación"));
 
         } catch (Exception e) {
-            model.addAttribute("error", "Error al registrar: " + e.getMessage());
-            return "presentation/Login/viewRegistroEmpresa";
+            return ResponseEntity.badRequest().body(Map.of("error", "Error al registrar: " + e.getMessage()));
         }
     }
 
     @PostMapping("/registro/oferente")
-    public String registrarOferente(
+    public ResponseEntity<?> registrarOferente(
             @RequestParam String username,
             @RequestParam String clave,
             @RequestParam String nombre,
@@ -93,13 +87,10 @@ public class LoginController {
             @RequestParam String nacionalidad,
             @RequestParam String telefono,
             @RequestParam String correo,
-            @RequestParam String residencia,
-            Model model) {
+            @RequestParam String residencia) {
         try {
-            // ← VALIDACIÓN: no permite espacios en blanco
             if (username.trim().isEmpty() || clave.trim().isEmpty()) {
-                model.addAttribute("error", "El usuario y la contraseña no pueden estar en blanco o contener solo espacios.");
-                return "presentation/Login/viewRegistroOferente";
+                return ResponseEntity.badRequest().body(Map.of("error", "El usuario y la contraseña no pueden estar en blanco o contener solo espacios."));
             }
 
             Usuario nuevoUsuario = new Usuario();
@@ -119,12 +110,10 @@ public class LoginController {
 
             service.registrarOferente(nuevoUsuario, nuevoOferente);
 
-            model.addAttribute("tipo", "OFE");
-            return "presentation/Login/pendienteAprobacion";
+            return ResponseEntity.ok(Map.of("tipo", "OFE", "estado", "Pendiente de aprobación"));
 
         } catch (Exception e) {
-            model.addAttribute("error", "Error al registrar: " + e.getMessage());
-            return "presentation/Login/viewRegistroOferente";
+            return ResponseEntity.badRequest().body(Map.of("error", "Error al registrar: " + e.getMessage()));
         }
     }
 }
