@@ -1,100 +1,101 @@
-import { useState, useEffect } from 'react';
-import './index.css';
+import { useContext } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { AppProvider, AppContext } from './AppProvider.jsx';
+
+// ── Páginas públicas ─────────────────────────────────────────────────
+import Login            from './pages/auth/Login.jsx';
+import RegistroEmpresa  from './pages/auth/RegistroEmpresa.jsx';
+import RegistroOferente from './pages/auth/RegistroOferente.jsx';
+import PendienteAprobacion from './pages/auth/PendienteAprobacion.jsx';
+import Inicio           from './pages/public/Inicio.jsx';
+import BuscaPuesto      from './pages/public/BuscaPuesto.jsx';
+
+// ── Páginas Admin ────────────────────────────────────────────────────
+import DashboardAdmin       from './pages/admin/DashboardAdmin.jsx';
+import EmpresasPendientes   from './pages/admin/EmpresasPendientes.jsx';
+import OferentesPendientes  from './pages/admin/OferentesPendientes.jsx';
+import AdminCaracteristicas from './pages/admin/AdminCaracteristicas.jsx';
+import AdminReportes        from './pages/admin/AdminReportes.jsx';
+
+// ── Páginas Empresa ──────────────────────────────────────────────────
+import DashboardEmpresa from './pages/empresa/DashboardEmpresa.jsx';
+import EditarEmpresa    from './pages/empresa/EditarEmpresa.jsx';
+import MisPuestos       from './pages/empresa/MisPuestos.jsx';
+import NuevoPuesto      from './pages/empresa/NuevoPuesto.jsx';
+import DetallePuesto    from './pages/empresa/DetallePuesto.jsx';
+import Candidatos       from './pages/empresa/Candidatos.jsx';
+import DetalleOferente  from './pages/empresa/DetalleOferente.jsx';
+
+// ── Páginas Oferente ─────────────────────────────────────────────────
+import DashboardOferente from './pages/oferente/DashboardOferente.jsx';
+import MisHabilidades    from './pages/oferente/MisHabilidades.jsx';
+import SubirCV           from './pages/oferente/SubirCV.jsx';
+
+/**
+ * ProtectedRoute — redirige si el rol no coincide.
+ *
+ * Con JWT no necesitamos llamar a /api/auth/me al montar:
+ * el AppProvider ya restaura el estado desde localStorage.
+ * Por eso se eliminó el useEffect que hacía ese request.
+ */
+function ProtectedRoute({ rol, children }) {
+    const { authState } = useContext(AppContext);
+    if (authState.cargando) return <p>Cargando...</p>;
+    if (!authState.usuario) return <Navigate to="/login" replace />;
+    if (rol && authState.usuario.rol !== rol) return <Navigate to="/" replace />;
+    return children;
+}
+
+/**
+ * AppRoutes — rutas de la aplicación.
+ *
+ * NOTA JWT: Ya no hay useEffect aquí para verificar sesión.
+ * El AppProvider se encarga de leer el token de localStorage
+ * y restaurar authState al inicializar.
+ */
+function AppRoutes() {
+    return (
+        <BrowserRouter>
+            <Routes>
+                {/* ── Públicas ───────────────────────────────────────────── */}
+                <Route path="/"              element={<Inicio />} />
+                <Route path="/buscar"        element={<BuscaPuesto />} />
+                <Route path="/login"         element={<Login />} />
+                <Route path="/registro/empresa"  element={<RegistroEmpresa />} />
+                <Route path="/registro/oferente" element={<RegistroOferente />} />
+                <Route path="/pendiente"     element={<PendienteAprobacion />} />
+
+                {/* ── Admin ──────────────────────────────────────────────── */}
+                <Route path="/admin" element={<ProtectedRoute rol="ADM"><DashboardAdmin /></ProtectedRoute>} />
+                <Route path="/admin/empresas"        element={<ProtectedRoute rol="ADM"><EmpresasPendientes /></ProtectedRoute>} />
+                <Route path="/admin/oferentes"       element={<ProtectedRoute rol="ADM"><OferentesPendientes /></ProtectedRoute>} />
+                <Route path="/admin/caracteristicas" element={<ProtectedRoute rol="ADM"><AdminCaracteristicas /></ProtectedRoute>} />
+                <Route path="/admin/reportes"        element={<ProtectedRoute rol="ADM"><AdminReportes /></ProtectedRoute>} />
+
+                {/* ── Empresa ────────────────────────────────────────────── */}
+                <Route path="/empresa"           element={<ProtectedRoute rol="EMP"><DashboardEmpresa /></ProtectedRoute>} />
+                <Route path="/empresa/editar"    element={<ProtectedRoute rol="EMP"><EditarEmpresa /></ProtectedRoute>} />
+                <Route path="/empresa/puestos"   element={<ProtectedRoute rol="EMP"><MisPuestos /></ProtectedRoute>} />
+                <Route path="/empresa/puestos/nuevo" element={<ProtectedRoute rol="EMP"><NuevoPuesto /></ProtectedRoute>} />
+                <Route path="/empresa/puestos/:id"   element={<ProtectedRoute rol="EMP"><DetallePuesto /></ProtectedRoute>} />
+                <Route path="/empresa/candidatos/:puestoId" element={<ProtectedRoute rol="EMP"><Candidatos /></ProtectedRoute>} />
+                <Route path="/empresa/candidatos/:puestoId/oferente/:oferenteId"
+                       element={<ProtectedRoute rol="EMP"><DetalleOferente /></ProtectedRoute>} />
+
+                {/* ── Oferente ───────────────────────────────────────────── */}
+                <Route path="/oferente"             element={<ProtectedRoute rol="OFE"><DashboardOferente /></ProtectedRoute>} />
+                <Route path="/oferente/habilidades" element={<ProtectedRoute rol="OFE"><MisHabilidades /></ProtectedRoute>} />
+                <Route path="/oferente/curriculum"  element={<ProtectedRoute rol="OFE"><SubirCV /></ProtectedRoute>} />
+            </Routes>
+        </BrowserRouter>
+    );
+}
 
 function App() {
-    const [puestos, setPuestos] = useState([]);
-
-    useEffect(() => {
-        (async () => {
-            const res = await fetch('/api/root/puestos/recientes');
-            if (!res.ok) return;
-            setPuestos(await res.json());
-        })();
-    }, []);
-
     return (
-        <>
-            {/* ── Sección Inicio con Navbar + Hero ── */}
-            <section className="Inicio">
-                <nav className="navbar-custom">
-                    <div className="navbar-inner">
-                        <span className="navbar-brand">
-                            <img
-                                src="https://cdn-icons-png.flaticon.com/512/86/86155.png"
-                                alt="icono"
-                                style={{ width: 50, height: 50, filter: 'brightness(0) invert(1)' }}
-                            />
-                            <strong> Bolsa de Empleo</strong>
-                        </span>
-                        <div className="navbar-links">
-                            <a className="nav-link" href="#">Buscar Puesto</a>
-                            <a className="nav-link" href="#">Empresas</a>
-                            <a className="nav-link" href="#">Oferentes</a>
-                            <a className="nav-link-login" href="#">Login</a>
-                        </div>
-                    </div>
-                </nav>
-
-                <div className="hero-content">
-                    <p className="hero-eyebrow">¿Buscas tu próximo gran proyecto?</p>
-                    <h1 className="hero-title">Encuentra tu próximo empleo</h1>
-                </div>
-            </section>
-
-            {/* ── Búsqueda rápida ── */}
-            <section className="busqueda-rapida">
-                <div className="card">
-                    <h5>Búsqueda rápida de puestos</h5>
-                    <div className="busqueda-row">
-                        <input
-                            type="text"
-                            placeholder="Ej: Desarrollador Java, Soporte Técnico..."
-                        />
-                        <button className="btn-primary">Buscar</button>
-                    </div>
-                </div>
-            </section>
-
-            {/* ── Últimos 5 puestos públicos ── */}
-            <section className="contenedor-puestos">
-                <h2>Últimos puestos públicos</h2>
-
-                {puestos.length === 0 ? (
-                    <p className="text-muted">
-                        Aún no hay puestos públicos registrados. ¡Volvé pronto!
-                    </p>
-                ) : (
-                    <div className="grid-puestos">
-                        {puestos.map(p => (
-                            <div className="card-puesto" key={p.id}>
-                                <h3>{p.empresa?.nombre ?? 'Empresa'}</h3>
-                                <p className="titulo">{p.descripcion}</p>
-                                <p className="salario">₡ {p.salario}</p>
-                                <div className="detalle">
-                                    <p><strong>Tipo:</strong> {p.tipo}</p>
-                                    <p><strong>Estado:</strong> {p.estado}</p>
-                                    <p><strong>Fecha:</strong> {p.fecha}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </section>
-
-            {/* ── Footer ── */}
-            <footer>
-                <div className="footer-inner">
-                    <div>
-                        <strong>Bolsa de Empleo</strong><br />
-                        Estudiantes de Ingeniería en Sistemas de la UNA
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        Contacto: info@bolsaempleo.local<br />
-                        Créditos: Universidad Nacional de Costa Rica
-                    </div>
-                </div>
-            </footer>
-        </>
+        <AppProvider>
+            <AppRoutes />
+        </AppProvider>
     );
 }
 

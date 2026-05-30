@@ -1,35 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<!--
+  ╔══════════════════════════════════════════════════════════════════╗
+  ║  pom.xml — VERSIÓN COMPLETA CON SOPORTE JWT                     ║
+  ║                                                                  ║
+  ║  Cambio principal respecto al pom.xml original:                  ║
+  ║  Se agrega la dependencia:                                       ║
+  ║    spring-boot-starter-oauth2-resource-server                    ║
+  ║                                                                  ║
+  ║  Esta dependencia incluye:                                       ║
+  ║    - Spring Security OAuth2 Resource Server                      ║
+  ║    - Nimbus JOSE + JWT (JWTClaimsSet, SignedJWT, MACSigner...)   ║
+  ║    - JwtDecoder, NimbusJwtDecoder                                ║
+  ║                                                                  ║
+  ║  Reemplaza el pom.xml completo en:                               ║
+  ║  Proyecto_P4_REACT/Backend/pom.xml                              ║
+  ╚══════════════════════════════════════════════════════════════════╝
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.4.5</version>
+        <version>3.3.5</version>
         <relativePath/>
     </parent>
     <groupId>BolsaEmpleo</groupId>
     <artifactId>BolsaEmpleoBackend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>BolsaEmpleoBackend</name>
+    <name>Proyecto_P4_BolsaEmpleo</name>
+    <description>Proyecto_P4_BolsaEmpleo</description>
 
     <properties>
         <java.version>21</java.version>
     </properties>
 
     <dependencies>
-        <!-- Core Spring Boot -->
+        <!-- ── Core Spring Boot ──────────────────────────────────────────── -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-thymeleaf</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Security + JWT (OAuth2 Resource Server) -->
+        <!-- ── Spring Security ───────────────────────────────────────────── -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -39,14 +60,23 @@
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
-        <!-- Base de datos -->
+        <!-- ── JWT / OAuth2 Resource Server ─────────────────────────────── -->
+        <!-- NUEVA DEPENDENCIA: incluye Nimbus JOSE+JWT y el soporte JWT     -->
+        <!-- de Spring Security. Provee: JwtDecoder, NimbusJwtDecoder,       -->
+        <!-- SignedJWT, JWTClaimsSet, MACSigner, OctetSequenceKey, etc.      -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+
+        <!-- ── Base de datos ─────────────────────────────────────────────── -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Dev tools / Lombok -->
+        <!-- ── Dev tools / Lombok ────────────────────────────────────────── -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -59,19 +89,35 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- PDF (OpenPDF) -->
+        <!-- ── PDF (OpenPDF) ─────────────────────────────────────────────── -->
         <dependency>
             <groupId>com.github.librepdf</groupId>
             <artifactId>openpdf</artifactId>
             <version>1.3.43</version>
         </dependency>
 
-        <!-- Multipart para subida de CV -->
+        <!-- ── Test ──────────────────────────────────────────────────────── -->
         <dependency>
-            <groupId>commons-fileupload</groupId>
-            <artifactId>commons-fileupload</artifactId>
-            <version>1.5</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <build>
