@@ -42,7 +42,8 @@ public class SecurityConfig {
                                 "/registro/oferente",
                                 "/css/**",
                                 "/js/**",
-                                "/images/**"
+                                "/images/**",
+                                "/api/**"
                         ).permitAll()
                         .requestMatchers(
                                 "/DashboardAdministrador",
